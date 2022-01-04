@@ -5,6 +5,7 @@ spring:
     driver-class-name: org.h2.Driver
     username: sa
     password:
+    url:  jdbc:h2:tcp://localhost/~/test
   jpa:
     generate-ddl: false
     show-sql: true

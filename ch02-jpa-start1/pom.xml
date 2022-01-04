@@ -14,7 +14,7 @@
     <name>ch02-jpa-start1</name>
     <description>ch02-jpa-start1</description>
     <properties>
-        <java.version>11</java.version>
+        <java.version>8</java.version>
     </properties>
     <dependencies>
         <dependency>

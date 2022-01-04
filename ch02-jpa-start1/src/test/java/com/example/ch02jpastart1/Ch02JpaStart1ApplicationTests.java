@@ -10,4 +10,5 @@ class Ch02JpaStart1ApplicationTests {
     void contextLoads() {
     }
 
+
 }
