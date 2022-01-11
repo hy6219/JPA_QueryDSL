@@ -17,7 +17,7 @@ import java.util.Date;
 @AllArgsConstructor
 public class Member {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY) //->identity 전략
     @Column(name="ID")
     private Long id;
 
