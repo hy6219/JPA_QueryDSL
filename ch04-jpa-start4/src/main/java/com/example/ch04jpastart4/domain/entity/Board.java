@@ -42,4 +42,14 @@ public class Board {
     @Temporal(TemporalType.TIMESTAMP)
     private Calendar temporalTypeTimeStamp;
 
+    /**
+     * @Lob 실습
+     * */
+    @Column(name = "clob_str")
+    @Lob
+    private String clobStr;
+
+    @Column(name = "blob_bytes")
+    @Lob
+    private byte[] blobBytes;
 }
