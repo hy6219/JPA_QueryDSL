@@ -52,4 +52,11 @@ public class Board {
     @Column(name = "blob_bytes")
     @Lob
     private byte[] blobBytes;
+
+    /**
+     * @Transient 실습
+     * */
+    @Transient
+    private Integer temp;
+
 }
