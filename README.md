@@ -9,3 +9,6 @@
 4. [jpa 영속성 관리! 영속성 컨텍스트](https://github.com/hy6219/JPA_QueryDSL/blob/main/intro/JPA-%EC%98%81%EC%86%8D%EC%84%B1%20%EA%B4%80%EB%A6%AC.md)
 
 5. [정적으로 엔티티 관리하기-엔티티 기본키 매핑 전략](https://github.com/hy6219/JPA_QueryDSL/blob/main/static_managing/%EC%A0%95%EC%A0%81%EC%9C%BC%EB%A1%9C%20%EC%97%94%ED%8B%B0%ED%8B%B0%20%EA%B4%80%EB%A6%AC%ED%95%98%EA%B8%B0-%EC%97%94%ED%8B%B0%ED%8B%B0%20%EA%B8%B0%EB%B3%B8%ED%82%A4%20%EB%A7%A4%ED%95%91%20%EC%A0%84%EB%9E%B5.md)
+
+6. [정적으로 엔티티 관리하기-엔티티 필드와 컬럼 매핑](https://github.com/hy6219/JPA_QueryDSL/blob/main/static_managing/%EC%A0%95%EC%A0%81%EC%9C%BC%EB%A1%9C%20%EC%97%94%ED%8B%B0%ED%8B%B0%20%EA%B4%80%EB%A6%AC%ED%95%98%EA%B8%B0-%EC%97%94%ED%8B%B0%ED%8B%B0%20%ED%95%84%EB%93%9C%EC%99%80%20%EC%BB%AC%EB%9F%BC%20%EB%A7%A4%ED%95%91.md)
+
