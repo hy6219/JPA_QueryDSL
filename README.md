@@ -12,3 +12,5 @@
 
 6. [정적으로 엔티티 관리하기-엔티티 필드와 컬럼 매핑](https://github.com/hy6219/JPA_QueryDSL/blob/main/static_managing/%EC%A0%95%EC%A0%81%EC%9C%BC%EB%A1%9C%20%EC%97%94%ED%8B%B0%ED%8B%B0%20%EA%B4%80%EB%A6%AC%ED%95%98%EA%B8%B0-%EC%97%94%ED%8B%B0%ED%8B%B0%20%ED%95%84%EB%93%9C%EC%99%80%20%EC%BB%AC%EB%9F%BC%20%EB%A7%A4%ED%95%91.md)
 
+7. [연관관계 기초](https://github.com/hy6219/JPA_QueryDSL/blob/main/relationship/%EC%97%B0%EA%B4%80%EA%B4%80%EA%B3%84%20%EB%A7%A4%ED%95%91%20%EA%B8%B0%EC%B4%88.md)
+
