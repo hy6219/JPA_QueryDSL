@@ -55,8 +55,7 @@ public class BiOrmSaveAndSearchTest {
         member2.setTeam(team);
         entityManager.persist(member2);
 
-        List<BiMember> members = List.of(member1,member2);
-        team.setMembers(members);
+
     }
 
     static void graphSearch(EntityManager entityManager){
