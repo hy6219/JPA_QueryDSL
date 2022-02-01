@@ -54,7 +54,7 @@ public class ManyToManyUniTest {
 
     static void search(EntityManager entityManager) {
         Member findMember = entityManager.find(Member.class,1L);
-        List<Product> ref = findMember.getProducts();
+        List<Product> ref = findMember.getProducts();//객체 그래프 탐색
 
         ref.forEach(product -> {
             System.out.println("member로 접근한 products: "+product);
