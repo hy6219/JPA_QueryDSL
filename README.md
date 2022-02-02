@@ -14,3 +14,9 @@
 
 7. [연관관계 기초](https://github.com/hy6219/JPA_QueryDSL/blob/main/relationship/%EC%97%B0%EA%B4%80%EA%B4%80%EA%B3%84%20%EB%A7%A4%ED%95%91%20%EA%B8%B0%EC%B4%88.md)
 
+8. [다양한 연관관계 매핑](https://github.com/hy6219/JPA_QueryDSL/blob/main/relationship/%EB%8B%A4%EC%96%91%ED%95%9C%20%EC%97%B0%EA%B4%80%EA%B4%80%EA%B3%84%20%EB%A7%A4%ED%95%91.md)
+
+	- [[JPA] gradle 환경에서 진행할 때 IllegalException - Unknown Entity 예외 발생](https://github.com/hy6219/JPA_QueryDSL/blob/main/relationship/%5BJPA%5D%20gradle%20%ED%99%98%EA%B2%BD%EC%97%90%EC%84%9C%20%EC%A7%84%ED%96%89%ED%95%A0%20%EB%95%8C%20IllegalException%20-%20Unknown%20Entity%20%EC%98%88%EC%99%B8%20%EB%B0%9C%EC%83%9D.md)
+
+
+
