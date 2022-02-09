@@ -2,7 +2,6 @@ package com.example.ch07jpastart1.domain.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
