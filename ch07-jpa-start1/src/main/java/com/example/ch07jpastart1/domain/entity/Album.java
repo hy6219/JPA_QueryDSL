@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
+import javax.persistence.PrimaryKeyJoinColumn;
 
 @Entity
 @EqualsAndHashCode(callSuper = false)
@@ -14,6 +15,7 @@ import javax.persistence.Entity;
 @NoArgsConstructor
 @AllArgsConstructor
 @DiscriminatorValue("A")
+@PrimaryKeyJoinColumn(name ="ALBUM_ID")
 public class Album extends Item{
     private String artist;
 }
