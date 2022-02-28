@@ -2068,9 +2068,12 @@ findChild: Child(id=childchild, parent=Parent(id=com.example.ch07jpastart6.domai
 ```
 그러면 역시, 결과는 동일 패턴으로 확인될 수 있음을 알 수 있다.
 다만, `ParentId-Parent` 간의 작업을 비교해보면, 
+https://www.baeldung.com/jpa-composite-primary-keys
 
-- `@IdClass`는 복합키 클래스의 필드명을 그대로 맞춰서 적어주어야 했지만
-- `@EmbeddedId`는 복합키 클래스를 인스턴스로 두기만 하면 물려받을 수 있다
+- `@IdClass`는 복합키 클래스의 필드명을 엔티티에서 그대로 맞춰서 적어주어야 했지만
+- `@EmbeddedId`는 복합키 클래스를 엔티티에서는 인스턴스로 두기만 하면 물려받을 수 있다
+
+▶ 복합키 개별에 접근할 때에는 `@IdClass`가, 전체에 접근할 경우에는 `@EmbeddedId`가 선호되기도 함
 
 ✅ 복합키에서 조심할 점
 
@@ -2078,5 +2081,444 @@ findChild: Child(id=childchild, parent=Parent(id=com.example.ch07jpastart6.domai
 - `@GeneratedValue`를 사용할 수 없음
 
 ### 3-3. 복합 키 : 식별 관계 매핑
+
+![복합키- 식별관계매핑](https://github.com/hy6219/JPA_QueryDSL/blob/main/inheritance_mapping/%EB%B3%B5%ED%95%A9%ED%82%A4%EC%99%80_%EC%8B%9D%EB%B3%84%EA%B4%80%EA%B3%84_%EB%A7%A4%ED%95%91/%EC%8B%9D%EB%B3%84_%EB%B3%B5%ED%95%A9%ED%82%A4.jpg?raw=true)
+
+이번에는 부모➡ 자식➡ 손자 까지 PK가 전달되고, 자식과 손자에서는 그 PK가 PK겸 FK로써 사용될 수 있는 식별관계를 살펴보자
+
+####  A. `@IdClass` 로 식별관계 매핑하기-복합키
+
+- **[연결된 부모 엔티티, 자신의 PK 필드]** 를 `엔티티 필드와 자신의 복합키 클래스`에 모두 명시해주고, 필드명도 맞추어주기!!
+
+1️⃣ 부모 엔티티
+```java
+package com.example.ch07jpastart7.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.Column;  
+import javax.persistence.Entity;  
+import javax.persistence.Id;  
+  
+@Entity  
+@Setter  
+@Getter  
+@ToString  
+public class Parent {  
+    @Id  
+ @Column(name = "PARENT_ID")  
+    private String id;  
+  
+ private String name;  
+}
+```
+
+2️⃣ -1. **[연결된 부모 엔티티, 자신의 PK 필드]** 로 구성된 자식클래스를 위한 복합키 클래스 준비
+
+```java
+package com.example.ch07jpastart7.domain.entity;  
+  
+import lombok.*;  
+  
+import java.io.Serializable;  
+  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+@EqualsAndHashCode  
+public class ChildId implements Serializable {  
+    //Child.parent 매핑  
+  private String parent;  
+  //Child.childId 매핑  
+  private String childId;  
+}
+```
+2️⃣ -2. **[연결된 부모 엔티티, 자신의 PK 필드]** 를 모두 Id로 식별하는 자식 엔티티 준비
+
+```java
+package com.example.ch07jpastart7.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+  
+@Entity  
+@IdClass(value = ChildId.class)  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+public class Child {  
+    @Id  
+ @ManyToOne @JoinColumn(name = "PARENT_ID")  
+    private Parent parent;//ChildId.parent와 매핑  
+  
+  @Id  
+ @Column(name = "CHILD_ID")  
+    private String childId;//ChildId.childId와 매핑  
+  
+  @Column(name = "NAME")  
+    private String name;  
+  
+}
+```
+
+3️⃣ -1 . `위에서 child격(ChildId)에서 이미 parent를 담고 있으므로, ` 따라서, **[연결된 부모의 엔티티, 자기자신 고유의 PK 필드]** 를 관리하는 GrandChildId 복합키 클래스를 준비하자
+
+```java
+package com.example.ch07jpastart7.domain.entity;  
+  
+import lombok.EqualsAndHashCode;  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+  
+import java.io.Serializable;  
+  
+@Getter  
+@Setter  
+@NoArgsConstructor  
+@EqualsAndHashCode  
+public class GrandChildId implements Serializable {  
+    //GrandChild.child와 매핑  
+  private ChildId child;  
+  //GrandChild.grandChildId와 매핑  
+  private String grandChildId;  
+}
+```
+3️⃣ -2.  **[연결된 부모의 엔티티, 자기자신 고유의 PK 필드]** 를 손자엔티티에서 준비해주고, `단, 부모 엔티티에는 PARENT, CHILD 모두 담겨 있기 때문에 이를 구별해주기 위한 JoinColumns 작성`
+
+```java
+package com.example.ch07jpastart7.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+  
+@Entity  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+@IdClass(value = GrandChildId.class)  
+public class GrandChild {  
+    @Id  
+ @ManyToOne @JoinColumns({  
+            @JoinColumn(name = "PARENT_ID"),  
+  @JoinColumn(name = "CHILD_ID")  
+    })  
+    private Child child;  
+  
+  @Id  
+ @Column(name = "GRANDCHILD_ID")  
+    private String grandChildId;  
+  
+  @Column(name ="name")  
+    private String name;  
+}
+```
+
+간단하게 위의 세 엔티티 간 관계를 활용해서 저장하고 조회해보자
+```java
+package com.example.ch07jpastart7.test;  
+  
+import com.example.ch07jpastart7.domain.entity.*;  
+  
+import javax.persistence.EntityManager;  
+import javax.persistence.EntityManagerFactory;  
+import javax.persistence.EntityTransaction;  
+import javax.persistence.Persistence;  
+  
+public class IdenticalRelComplexTest {  
+    public static void main(String[] args) {  
+        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("jpabook");  
+  EntityManager entityManager = entityManagerFactory.createEntityManager();  
+  EntityTransaction tx = entityManager.getTransaction();  
+  
+ try {  
+            tx.begin();  
+  logic(entityManager);  
+  tx.commit();  
+  } catch (Exception e) {  
+            e.printStackTrace();  
+  } finally {  
+            entityManager.close();  
+  }  
+  
+        entityManagerFactory.close();  
+  }  
+  
+    static void logic(EntityManager entityManager) {  
+        Parent parent = new Parent();  
+  parent.setId("p1");  
+  parent.setName("parent1");  
+  entityManager.persist(parent);  
+  
+  //복합키로 조회할 때 테스트용 목적  
+  ChildId childId = new ChildId();  
+  childId.setParent(parent.getId());  
+  childId.setChildId("child1");  
+  
+  Child child = new Child();  
+  child.setChildId("child1");  
+  child.setParent(parent);  
+  child.setName("childchild");  
+  entityManager.persist(child);  
+  
+  //복합키로 조회할 때 테스트용 목적  
+  GrandChildId grandChildId = new GrandChildId();  
+  grandChildId.setChild(childId);  
+  grandChildId.setGrandChildId("grandgrand");  
+  
+  GrandChild grandChild = new GrandChild();  
+  grandChild.setChild(child);  
+  grandChild.setGrandChildId("grandgrand");  
+  grandChild.setName("grandName");  
+  entityManager.persist(grandChild);  
+  
+  //조회  
+  Parent findParent = entityManager.find(Parent.class,"p1");  
+  Child findChild = entityManager.find(Child.class,childId);  
+  GrandChild findGrand = entityManager.find(GrandChild.class,grandChildId);  
+  
+  System.out.println("findParent: "+findParent);  
+  System.out.println("findChild: "+findChild);  
+  System.out.println("findGrand: "+findGrand);  
+  }  
+}
+```
+
+```
+Hibernate: 
+    
+    create table Child (
+       CHILD_ID varchar(255) not null,
+        PARENT_ID varchar(255) not null,
+        NAME varchar(255),
+        primary key (CHILD_ID, PARENT_ID)
+    )
+Hibernate: 
+    
+    create table GrandChild (
+       GRANDCHILD_ID varchar(255) not null,
+        name varchar(255),
+        PARENT_ID varchar(255) not null,
+        CHILD_ID varchar(255) not null,
+        primary key (PARENT_ID, CHILD_ID, GRANDCHILD_ID)
+    )
+Hibernate: 
+    
+    create table Parent (
+       PARENT_ID varchar(255) not null,
+        name varchar(255),
+        primary key (PARENT_ID)
+    )
+Hibernate: 
+    alter table Child 
+       add constraint FKqtrfkxtu92rllepi09f1mwvls 
+       foreign key (PARENT_ID) 
+       references Parent
+Hibernate: 
+    
+    alter table GrandChild 
+       add constraint FK8inu9bnj1yk1nrcistr894v1f 
+       foreign key (PARENT_ID, CHILD_ID) 
+       references Child
+14:51:51.720 [main] DEBUG org.hibernate.event.internal.AbstractSaveEventListener - Generated identifier: p1, using strategy: org.hibernate.id.Assigned
+14:51:51.731 [main] DEBUG org.hibernate.event.internal.AbstractSaveEventListener - Generated identifier: component[childId,parent]{parent=p1, childId=child1}, using strategy: org.hibernate.id.CompositeNestedGeneratedValueGenerator
+14:51:51.733 [main] DEBUG org.hibernate.event.internal.AbstractSaveEventListener - Generated identifier: component[child,grandChildId]{grandChildId=grandgrand, child=component[childId,parent]{parent=p1, childId=child1}}, using strategy: org.hibernate.id.CompositeNestedGeneratedValueGenerator
+findParent: Parent(id=p1, name=parent1)
+findChild: Child(parent=Parent(id=p1, name=parent1), childId=child1, name=childchild)
+findGrand: GrandChild(child=Child(parent=Parent(id=p1, name=parent1), childId=child1, name=childchild), grandChildId=grandgrand, name=grandName)
+```
+발생한 쿼리를 확인해보면(DDL)
+
+- Parent 의 PK: PARENT_ID
+- Child의 PK: PARENT_ID[:FK+PK], CHILD_ID
+- GrandChild의 PK: PARENT_ID+CHILD_ID[:FK+PK], GRANDCHILD_ID
+로 구성되는 것을 알 수 있고, 각각의 식별자(복합키 식별자 포함)로 레코드가 조회되는 것을 확인해볼 수 있다
+(ex)
+```
+ 손자엔티티(부모엔티티=부모정보
+					(조상엔티티=조상(조상식별자=p1, 조상컬럼1=parent1), 
+					부모식별자=child1, 부모컬럼1=childchild), 
+					손자식별자=grandgrand, 손자컬럼1=grandName)
+```
+
+🧡🧡 `식별관계에서 복합키를 사용할 때`에는 `기본키와 외래키를 같이 매핑`해야 하기 때문에, 넘겨받는 PK에 대해서는 `@Id`와 `@ManyToOne`을 같이 사용해야 한다!(연관관계 매핑과 Id 식별자 매핑을 같이!)
+
+####  B. `@EmbeddedId` 로 식별관계 매핑하기-복합키
+
+- `@MapsId로 식별관계 구성`(물려받는 PK)
+
+1️⃣ 조상격인 Parent 엔티티
+
+```java
+package com.example.ch07jpastart8.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.Column;  
+import javax.persistence.Entity;  
+import javax.persistence.Id;  
+  
+@Entity  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+public class Parent {  
+    @Id  
+ @Column(name = "PARENT_ID")  
+    private String id;  
+  
+ private String name;  
+}
+```
+
+2️⃣-1. Child 엔티티를 위한 ChildId 클래스 준비
+
+```java
+package com.example.ch07jpastart8.domain.entity;  
+  
+import lombok.EqualsAndHashCode;  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+  
+import javax.persistence.Column;  
+import javax.persistence.Embeddable;  
+import java.io.Serializable;  
+  
+@NoArgsConstructor  
+@EqualsAndHashCode  
+@Getter  
+@Setter  
+@Embeddable  
+public class ChildId implements Serializable {  
+    //Child.parent에서 `@MapsId(parentId)`와 매핑  
+  private String parentId;  
+ 
+  @Column(name = "CHILD_ID")  
+    private String id;  
+}
+```
+
+2️⃣ -2. Child 엔티티
+
+- `물려받은 PK는 연관관계+@MapsId(복합키 클래스에서의 필드명)` 으로 연결-"A"
+- Child 엔티티만의 PK와 "A"는 모두 `@EmbeddedId` 로 불러들어옴
+
+```java
+package com.example.ch07jpastart8.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+  
+@Entity  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+public class Child {  
+    @EmbeddedId  
+  private ChildId id;  
+  
+  @ManyToOne  
+ @MapsId("parentId")//ChildId.parentId와 연결  
+  @JoinColumn(name = "PARENT_ID")  
+    private Parent parent;  
+  
+  @Column(name = "name")  
+    private String name;  
+}
+```
+
+3️⃣ -1. 손자 엔티티를 위한 복합키 클래스
+
+- ➕ 이때, 기존 복합키를 손자 엔티티에서 포함시키는 과정에서  `Embeddable attribute is not marked as @Embedded `라는 경고가 표시되어 찾아보니, [엔티티에서 다른 엔티티를 포함시키는 경우](https://www.baeldung.com/jpa-embedded-embeddable)&& [(해당되는 이번 경우처럼) Embeddable이 붙은 객체를 클래스 내에서 사용할 경우](https://docs.jboss.org/hibernate/core/3.6/reference/en-US/html/mapping.html#mapping-declaration-component)에는 `@Embedded` 를 필드에 붙여주어야 한다
+
+```java
+package com.example.ch07jpastart8.domain.entity;  
+  
+import lombok.EqualsAndHashCode;  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+  
+import javax.persistence.Column;  
+import javax.persistence.Embeddable;  
+import javax.persistence.Embedded;  
+import java.io.Serializable;  
+  
+@NoArgsConstructor  
+@EqualsAndHashCode  
+@Getter  
+@Setter  
+@Embeddable  
+public class GrandChildId implements Serializable {  
+    //GrandChild.child에서 `@MapsId(childId)`와 매핑  
+  @Embedded  
+  private ChildId childId;  
+  
+  @Column(name = "GRANDCHILD_ID")  
+    private String id;  
+}
+```
+
+
+3️⃣ -2. 손자 엔티티
+
+```java
+package com.example.ch07jpastart8.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+  
+@Entity  
+@Getter  
+@Setter  
+@ToString  
+@NoArgsConstructor  
+public class GrandChild {  
+    @EmbeddedId  
+  private GrandChildId id;  
+  
+  @MapsId("childId")//GrandChildId.childId와 연결  
+  @ManyToOne  
+ @JoinColumns({  
+            @JoinColumn(name = "PARENT_ID"),  
+  @JoinColumn(name = "CHILD_ID")  
+    })  
+    private Child child;  
+  
+  @Column(name = "name")  
+    private String name;  
+}
+```
+
+간단하게 세 엔티티를 저장하고 조회해보자
+
+
 
 
