@@ -3,7 +3,7 @@
     <persistence-unit name="jpabook">
         <class>com.example.ch07jpastart5.domain.entity.ParentComplexId</class>
         <class>com.example.ch07jpastart5.domain.entity.Parent</class>
-        
+        <class>com.example.ch07jpastart5.domain.entity.Child</class>
         <properties>
             <property name="javax.persistence.jdbc.url" value="jdbc:h2:tcp://localhost/~/test"/>
             <property name="javax.persistence.jdbc.driver" value="org.h2.Driver"/>
