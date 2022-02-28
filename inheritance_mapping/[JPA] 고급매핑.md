@@ -1456,27 +1456,627 @@ id: 1, seller1, Product(id=1, name=samsung notebook, type=COMPUTER, price=100000
 
 1️⃣ `Serializable을 구현한 복합키들만 존재하는 복합키 클래스` 준비
 
-- 단, 이때 복합키 필드명은 자식 클래스 필드명과 맞춰주어야 함
+- 단, **이때 복합키 필드명은 자식 클래스 필드명과 맞춰주어야 함**💥💥💥
 - equals, hashCode 구현
-- 기본 생성자가 있어야 함
-- 식별자 클래스는 public
-- Serializable 구현
+- `기본 생성자`가 있어야 함
+- `식별자 클래스는 public`
+- `Serializable` 구현
 ```java
 package com.example.ch07jpastart5.domain.entity;  
   
-import lombok.AllArgsConstructor;  
-import lombok.EqualsAndHashCode;  
-import lombok.NoArgsConstructor;  
+import lombok.*;  
   
 import java.io.Serializable;  
   
 @NoArgsConstructor  
 @AllArgsConstructor  
 @EqualsAndHashCode  
+@Getter  
+@Setter  
 public class ParentComplexId implements Serializable {  
     private String id1;//자식클래스 필드명과 맞춰주어야 함  
   private String id2;  
 }
 ```
 
-2️⃣
+2️⃣ `1️⃣ 을 PK로 사용하는 Parent 클래스 엔티티 준비`
+
+```java
+package com.example.ch07jpastart5.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.Column;  
+import javax.persistence.Entity;  
+import javax.persistence.Id;  
+import javax.persistence.IdClass;  
+  
+@Entity  
+@IdClass(value = ParentComplexId.class)  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+public class Parent {  
+    /**  
+ * 복합키클래스에서의 필드명과 맞춰주어야 함  
+  */  
+  @Id  
+ @Column(name ="PARENT_ID1")  
+    private String id1;  
+  
+  @Id  
+ @Column(name = "PARENT_ID2")  
+    private String id2;  
+  
+  @Column(name = "NAME")  
+    private String name;  
+}
+```
+간단하게 Parent 엔티티에 복합키를 적용하는 과정을 확인해보자
+
+```java
+package com.example.ch07jpastart5.test;  
+  
+import com.example.ch07jpastart5.domain.entity.Parent;  
+  
+import javax.persistence.EntityManager;  
+import javax.persistence.EntityManagerFactory;  
+import javax.persistence.EntityTransaction;  
+import javax.persistence.Persistence;  
+import java.util.List;  
+  
+public class ParentComplexIdTest {  
+    public static void main(String[] args) {  
+        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("jpabook");  
+  EntityManager entityManager = entityManagerFactory.createEntityManager();  
+  EntityTransaction tx = entityManager.getTransaction();  
+  
+ try {  
+            tx.begin();  
+  logic(entityManager);  
+  tx.commit();  
+  }catch (Exception e){  
+            e.printStackTrace();  
+  }finally {  
+            entityManager.close();  
+  }  
+        entityManagerFactory.close();  
+  }  
+  
+    static void logic(EntityManager entityManager){  
+        Parent parent = new Parent();  
+  parent.setId1("parent_id1");  
+  parent.setId2("parent_id2");  
+  parent.setName("name1");  
+  entityManager.persist(parent);  
+  
+  List<Parent> saved = entityManager.createQuery("select p from Parent p",Parent.class)  
+                .getResultList();  
+  
+  System.out.println("저장되었던 모든 Parents: "+saved);  
+  }  
+}
+```
+
+```
+09:52:04.679 [main] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        Parent
+        (NAME, PARENT_ID1, PARENT_ID2) 
+    values
+        (?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Parent
+        (NAME, PARENT_ID1, PARENT_ID2) 
+    values
+        (?, ?, ?)
+09:52:04.691 [main] DEBUG org.hibernate.SQL - 
+    select
+        parent0_.PARENT_ID1 as parent_i1_0_,
+        parent0_.PARENT_ID2 as parent_i2_0_,
+        parent0_.NAME as name3_0_ 
+    from
+        Parent parent0_
+Hibernate: 
+    select
+        parent0_.PARENT_ID1 as parent_i1_0_,
+        parent0_.PARENT_ID2 as parent_i2_0_,
+        parent0_.NAME as name3_0_ 
+    from
+        Parent parent0_
+09:52:04.694 [main] DEBUG org.hibernate.loader.Loader - Result row: EntityKey[com.example.ch07jpastart5.domain.entity.Parent#component[id1,id2]{id2=parent_id2, id1=parent_id1}]
+저장되었던 모든 Parents: [Parent(id1=parent_id1, id2=parent_id2, name=name1)]
+```
+
+그런데 처리 결과를 보면, 식별자 클래스인 ParentComplexId가 보이지 않는다. 이는 entityManager.persist 전에 내부에서 Parent.id1, Parent.id2 값을 사용해서 ParentComplexId를 생성하고 영속성 컨텍스트의 키로 사용되기 때문이다
+
+ParentComplexId로 조회해보자
+
+```java
+package com.example.ch07jpastart5.test;  
+  
+import com.example.ch07jpastart5.domain.entity.Parent;  
+import com.example.ch07jpastart5.domain.entity.ParentComplexId;  
+  
+import javax.persistence.EntityManager;  
+import javax.persistence.EntityManagerFactory;  
+import javax.persistence.EntityTransaction;  
+import javax.persistence.Persistence;  
+import java.util.List;  
+  
+public class ParentComplexIdTest {  
+    public static void main(String[] args) {  
+        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("jpabook");  
+  EntityManager entityManager = entityManagerFactory.createEntityManager();  
+  EntityTransaction tx = entityManager.getTransaction();  
+  
+ try {  
+            tx.begin();  
+  logic(entityManager);  
+  tx.commit();  
+  }catch (Exception e){  
+            e.printStackTrace();  
+  }finally {  
+            entityManager.close();  
+  }  
+        entityManagerFactory.close();  
+  }  
+  
+    static void logic(EntityManager entityManager){  
+        Parent parent = new Parent();  
+  parent.setId1("parent_id1");  
+  parent.setId2("parent_id2");  
+  parent.setName("name1");  
+  entityManager.persist(parent);  
+  
+  List<Parent> saved = entityManager.createQuery("select p from Parent p",Parent.class)  
+                .getResultList();  
+  
+  System.out.println("저장되었던 모든 Parents: "+saved);  
+  
+  //ParentComplexId로 조회  
+  ParentComplexId complexId = new ParentComplexId();  
+  complexId.setId1("parent_id1");  
+  complexId.setId2("parent_id2");  
+  Parent findByComplexId = entityManager.find(Parent.class,complexId);  
+  System.out.println("ParentComplexId로 조회: "+findByComplexId);  
+  }  
+}
+```
+```
+저장되었던 모든 Parents: [Parent(id1=parent_id1, id2=parent_id2, name=name1)]
+ParentComplexId로 조회: Parent(id1=parent_id1, id2=parent_id2, name=name1)
+```
+
+확인해본 결과, ParentComplexId로 Parent를 조회할 수 있음을 확인해볼 수 있다
+
+이제 자식클래스를 추가해보자
+
+3️⃣ 부모 테이블의 기본키 컬럼이 복합키이기 때문에, `연관관계 매핑하는 부분에서 @JoinColumns({@JoinColumn})으로 어떤 컬럼을 참조(referencedColumnName)할 것이고, 자식 클래스에서는 이름(name)을 무엇으로 할 것인지` 명시해주자!
+만약, name과 referencedColumnName을 같게 한다면, referencedColumnName은 생략해도 된다!!
+
+↔ 
+```java
+package com.example.ch07jpastart5.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+  
+@Entity  
+@Getter  
+@Setter  
+@NoArgsConstructor  
+@ToString  
+public class Child {  
+    @Id  
+  private String id;  
+  
+  @ManyToOne  
+ @JoinColumns({  
+            @JoinColumn(name = "PARENT_ID1", referencedColumnName = "PARENT_ID1"),  
+  @JoinColumn(name = "PARENT_ID2", referencedColumnName = "PARENT_ID2")  
+    })  
+    private Parent parent;  
+}
+```
+↔
+```java
+package com.example.ch07jpastart5.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+  
+@Entity  
+@Getter  
+@Setter  
+@NoArgsConstructor  
+@ToString  
+public class Child {  
+    @Id  
+  private String id;  
+  
+  @ManyToOne  
+ @JoinColumns({  
+            @JoinColumn(name = "PARENT_ID1"),  
+  @JoinColumn(name = "PARENT_ID2")  
+    })  
+    private Parent parent;  
+}
+```
+DDL을 살펴보면 아래처럼 Parent 테이블은 복합키가 생성되고, Child는 alter로 FK로써 그 복합키를 참조하는 것을 확인해볼 수 있다
+
+```
+create table Child (
+       id varchar(255) not null,
+        PARENT_ID1 varchar(255),
+        PARENT_ID2 varchar(255),
+        primary key (id)
+    )
+create table Parent (
+       PARENT_ID1 varchar(255) not null,
+        PARENT_ID2 varchar(255) not null,
+        NAME varchar(255),
+        primary key (PARENT_ID1, PARENT_ID2)
+    )
+alter table Child 
+       add constraint FKiw6nxs5a8k6vrivlfrb62qp8q 
+       foreign key (PARENT_ID1, PARENT_ID2) 
+       references Parent
+```
+
+간단하게 자식 클래스도 테스트해보자
+```java
+package com.example.ch07jpastart5.test;  
+  
+import com.example.ch07jpastart5.domain.entity.Child;  
+import com.example.ch07jpastart5.domain.entity.Parent;  
+import com.example.ch07jpastart5.domain.entity.ParentComplexId;  
+  
+import javax.persistence.EntityManager;  
+import javax.persistence.EntityManagerFactory;  
+import javax.persistence.EntityTransaction;  
+import javax.persistence.Persistence;  
+  
+public class ChildTest {  
+    public static void main(String[] args) {  
+        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("jpabook");  
+  EntityManager entityManager = entityManagerFactory.createEntityManager();  
+  EntityTransaction tx = entityManager.getTransaction();  
+  
+ try {  
+            tx.begin();  
+  logic(entityManager);  
+  tx.commit();  
+  }catch (Exception e){  
+            e.printStackTrace();  
+  }finally {  
+            entityManager.close();  
+  }  
+        entityManagerFactory.close();  
+  }  
+  
+    static void logic(EntityManager entityManager){  
+        Parent parent = new Parent();  
+  parent.setId1("id1");  
+  parent.setId2("id2");  
+  parent.setName("namename");  
+  entityManager.persist(parent);  
+  
+  Child child = new Child();  
+  child.setId("child");  
+  child.setParent(parent);  
+  entityManager.persist(child);  
+  
+  Child find = entityManager.find(Child.class,"child");  
+  System.out.println("find child: "+find);  
+  System.out.println("parent: "+find.getParent());  
+  }  
+}
+```
+```
+10:16:01.384 [main] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        Parent
+        (NAME, PARENT_ID1, PARENT_ID2) 
+    values
+        (?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Parent
+        (NAME, PARENT_ID1, PARENT_ID2) 
+    values
+        (?, ?, ?)
+10:16:01.392 [main] DEBUG org.hibernate.SQL - 
+    insert 
+    into
+        Child
+        (PARENT_ID1, PARENT_ID2, id) 
+    values
+        (?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Child
+        (PARENT_ID1, PARENT_ID2, id) 
+    values
+        (?, ?, ?)
+
+10:16:01.333 [main] DEBUG org.hibernate.event.internal.AbstractSaveEventListener - Generated identifier: child, using strategy: org.hibernate.id.Assigned
+find child: Child(id=child, parent=Parent(id1=id1, id2=id2, name=namename))
+parent: Parent(id1=id1, id2=id2, name=namename)
+```
+그러면 위와 같이 Parent, Child가 모두 확인되는 모습을 볼 수 있다
+
+#### 3-2-2. `@EmbeddedId` 이용
+
+✅ `@IdClass` vs `@EmbeddedId`
+
+-  `@IdClass`: db에 맞춘 방법
+- `@EmbeddedId` : 좀 더 객체지향적인 방법, 중복도 없어서 좋아보이기는 하지만 특정 상황에 JPQL이 조금 더 길어보일 수 있음
+
+ex) p.261
+```
+//1.`@EmbeddedId`
+em.createQuery("select p.id.id1,p.id.id2 from Parent p",Parent.class)
+//2.`@IdClass`
+em.createQuery("select p.id1,p.id2 from Parent p", Parent.class)
+```
+
+-------
+
+💥💥💥 `@EmbeddedId`  를 적용한 식별자 클래스가 만족해야하는 조건
+
+- `@Embeddable` 어노테이션을 `복합키 클래스`에 붙여주기
+- `Serializable` 인터페이스를 복합키 클래스에서 구현해주기
+- `equals, hashCode를 구현`해야 함
+- `기본 생성자`가 있어야 함
+- `식별자 클래스는 public` 이어야 함
+
+1️⃣ 식별자 클래스를 만들어보자
+
+```java
+package com.example.ch07jpastart6.domain.entity;  
+  
+import lombok.EqualsAndHashCode;  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+  
+import javax.persistence.Column;  
+import javax.persistence.Embeddable;  
+import java.io.Serializable;  
+  
+@Embeddable  
+@Getter  
+@Setter  
+@EqualsAndHashCode  
+@NoArgsConstructor  
+public class ParentId implements Serializable {  
+    @Column(name = "PARENT_ID1")  
+    private String id1;  
+  
+  @Column(name = "PARENT_ID2")  
+    private String id2;  
+}
+```
+
+2️⃣ 복합키를 사용할 Parent 클래스에서 `@EmbeddedId`를 달아주자
+```java
+@EmbeddedId
+private ParentId id;
+```
+```java
+package com.example.ch07jpastart6.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.Column;  
+import javax.persistence.EmbeddedId;  
+import javax.persistence.Entity;  
+  
+@Entity  
+@Getter  
+@Setter  
+@ToString  
+public class Parent {  
+    @EmbeddedId  
+  private ParentId id;  
+  
+  @Column(name = "name")  
+    private String name;  
+}
+```
+
+```java
+package com.example.ch07jpastart6.test;  
+  
+import com.example.ch07jpastart6.domain.entity.Parent;  
+import com.example.ch07jpastart6.domain.entity.ParentId;  
+  
+import javax.persistence.EntityManager;  
+import javax.persistence.EntityManagerFactory;  
+import javax.persistence.EntityTransaction;  
+import javax.persistence.Persistence;  
+  
+public class EmbeddedIdParentTest {  
+    public static void main(String[] args) {  
+        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("jpabook");  
+  EntityManager entityManager = entityManagerFactory.createEntityManager();  
+  EntityTransaction tx = entityManager.getTransaction();  
+  
+ try {  
+            tx.begin();  
+  logic(entityManager);  
+  tx.commit();  
+  }catch (Exception e){  
+            e.printStackTrace();  
+  }finally {  
+            entityManager.close();  
+  }  
+        entityManagerFactory.close();  
+  }  
+  
+    static void logic(EntityManager entityManager){  
+        ParentId id = new ParentId();  
+  id.setId1("id1");  
+  id.setId2("id2");  
+  
+  Parent parent = new Parent();  
+  parent.setId(id);  
+  parent.setName("name1");  
+  entityManager.persist(parent);  
+  
+  Parent find = entityManager.find(Parent.class,id);  
+  System.out.println("find: "+find);  
+  }  
+}
+```
+
+```
+create table Parent (
+       PARENT_ID1 varchar(255) not null,
+        PARENT_ID2 varchar(255) not null,
+        name varchar(255),
+        primary key (PARENT_ID1, PARENT_ID2)
+    )
+
+find: Parent(id=com.example.ch07jpastart6.domain.entity.ParentId@5f5142, name=name1)    
+```
+
+3️⃣ 이번에는 비식별 관계에 있는 자식클래스를 추가해보자
+
+```java
+package com.example.ch07jpastart6.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+  
+@Entity  
+@Getter  
+@Setter  
+@ToString  
+@NoArgsConstructor  
+public class Child {  
+    @Id  
+  private String id;  
+  
+  @ManyToOne  
+ @JoinColumns({  
+            @JoinColumn(name = "PARENT_ID1"),  
+  @JoinColumn(name = "PARENT_ID2")  
+    })  
+    private Parent parent;  
+}
+```
+
+```java
+package com.example.ch07jpastart6.test;  
+  
+import com.example.ch07jpastart6.domain.entity.Child;  
+import com.example.ch07jpastart6.domain.entity.Parent;  
+import com.example.ch07jpastart6.domain.entity.ParentId;  
+  
+import javax.persistence.EntityManager;  
+import javax.persistence.EntityManagerFactory;  
+import javax.persistence.EntityTransaction;  
+import javax.persistence.Persistence;  
+  
+public class ChildTest {  
+    public static void main(String[] args) {  
+        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("jpabook");  
+  EntityManager entityManager = entityManagerFactory.createEntityManager();  
+  EntityTransaction tx = entityManager.getTransaction();  
+  
+ try {  
+            tx.begin();  
+  logic(entityManager);  
+  tx.commit();  
+  }catch (Exception e){  
+            e.printStackTrace();  
+  }finally {  
+            entityManager.close();  
+  }  
+  
+        entityManagerFactory.close();  
+  }  
+  
+    static void logic(EntityManager entityManager){  
+        ParentId id = new ParentId();  
+  id.setId1("idid1");  
+  id.setId2("idid2");  
+  
+  Parent parent = new Parent();  
+  parent.setId(id);  
+  parent.setName("p");  
+  entityManager.persist(parent);  
+  
+  Child child = new Child();  
+  child.setId("childchild");
+  child.setParent(parent);  
+  entityManager.persist(child);  
+  
+  Parent findParent = entityManager.find(Parent.class,id);  
+  Child findChild = entityManager.find(Child.class,"childchild");  
+  System.out.println("findParent: "+findParent);  
+  System.out.println("findChild: "+findChild);  
+  }  
+}
+```
+```
+ create table Child (
+       id varchar(255) not null,
+        PARENT_ID1 varchar(255),
+        PARENT_ID2 varchar(255),
+        primary key (id)
+    )
+create table Parent (
+       PARENT_ID1 varchar(255) not null,
+        PARENT_ID2 varchar(255) not null,
+        name varchar(255),
+        primary key (PARENT_ID1, PARENT_ID2)
+    )
+ alter table Child 
+       add constraint FKiw6nxs5a8k6vrivlfrb62qp8q 
+       foreign key (PARENT_ID1, PARENT_ID2) 
+       references Parent
+11:44:43.790 [main] DEBUG org.hibernate.event.internal.AbstractSaveEventListener - Generated identifier: childchild, using strategy: org.hibernate.id.Assigned
+findParent: Parent(id=com.example.ch07jpastart6.domain.entity.ParentId@65d12e6e, name=p)
+findChild: Child(id=childchild, parent=Parent(id=com.example.ch07jpastart6.domain.entity.ParentId@65d12e6e, name=p))
+```
+그러면 역시, 결과는 동일 패턴으로 확인될 수 있음을 알 수 있다.
+다만, `ParentId-Parent` 간의 작업을 비교해보면, 
+
+- `@IdClass`는 복합키 클래스의 필드명을 그대로 맞춰서 적어주어야 했지만
+- `@EmbeddedId`는 복합키 클래스를 인스턴스로 두기만 하면 물려받을 수 있다
+
+✅ 복합키에서 조심할 점
+
+- equals, hashCode를 구현해서 동등성을 확인해서 같은 엔티티인지 확인이 필요
+- `@GeneratedValue`를 사용할 수 없음
+
+### 3-3. 복합 키 : 식별 관계 매핑
+
+
