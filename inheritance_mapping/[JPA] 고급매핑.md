@@ -1422,6 +1422,7 @@ id: 1, seller1, Product(id=1, name=samsung notebook, type=COMPUTER, price=100000
 ### 3-1. 식별관계 vs 비식별관계
 
 - 식별관계 `Identifying Relationship` : 자식 테이블에서  `부모테이블의 PK가 FK로써도, PK로써도 사용됨`
+- jpa는 필수적, 선택적 비식별 관계를 모두 지원!
 
 ![식별관계](https://github.com/hy6219/JPA_QueryDSL/blob/main/inheritance_mapping/%EB%B3%B5%ED%95%A9%ED%82%A4%EC%99%80_%EC%8B%9D%EB%B3%84%EA%B4%80%EA%B3%84_%EB%A7%A4%ED%95%91/%EC%8B%9D%EB%B3%84%EA%B4%80%EA%B3%84.jpg?raw=true)
 
@@ -1440,8 +1441,323 @@ id: 1, seller1, Product(id=1, name=samsung notebook, type=COMPUTER, price=100000
 - 외래키에 NULL 허용
 - 연관관계를 맺을 지 말지 선택 가능
 
+#### 3-1-1. 비식별관계
 
-- jpa는 필수적, 선택적 비식별 관계를 모두 지원!
+![비식별관계](https://github.com/hy6219/JPA_QueryDSL/blob/main/inheritance_mapping/%EB%B3%B5%ED%95%A9%ED%82%A4%EC%99%80_%EC%8B%9D%EB%B3%84%EA%B4%80%EA%B3%84_%EB%A7%A4%ED%95%91/%EB%B9%84%EC%8B%9D%EB%B3%84%EA%B4%80%EA%B3%84_p266.jpg?raw=true)
+
+위와 같은 비식별관계는 아래처럼 복합키가 아니므로, 편하게 아래처럼 생각해볼 수 있다
+
+(1) Parent 엔티티
+
+```java
+package com.example.ch07jpastart9.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.Column;  
+import javax.persistence.Entity;  
+import javax.persistence.Id;  
+  
+@Entity  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+public class Parent {  
+    @Id  
+ @Column(name = "PARENT_ID")  
+    private String id;  
+  
+    @Column(name = "NAME")  
+    private String name;  
+}
+```
+
+(2) Child 엔티티
+
+```java
+package com.example.ch07jpastart9.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+  
+@Entity  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+public class Child {  
+    @Id  
+ @Column(name = "CHILD_ID")  
+    private String id;  
+  
+    @Column(name = "NAME")  
+    private String name;  
+  
+    @ManyToOne  
+ @JoinColumn(name = "PARENT_ID")//상대측 연결  
+  private Parent parent;  
+}
+```
+
+(3) GrandChild 엔티티
+
+```java
+package com.example.ch07jpastart9.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+  
+@Entity  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+public class GrandChild {  
+    @Id  
+ @Column(name = "GRANDCHILD_ID")  
+    private String id;  
+  
+    @Column(name = "NAME")  
+    private String name;  
+  
+    @ManyToOne  
+ @JoinColumn(name = "CHILD_ID")  
+    private Child child;  
+}
+```
+
+```java
+package com.example.ch07jpastart9.test;  
+  
+import com.example.ch07jpastart9.domain.entity.Child;  
+import com.example.ch07jpastart9.domain.entity.GrandChild;  
+import com.example.ch07jpastart9.domain.entity.Parent;  
+  
+import javax.persistence.EntityManager;  
+import javax.persistence.EntityManagerFactory;  
+import javax.persistence.EntityTransaction;  
+import javax.persistence.Persistence;  
+  
+public class 비식별관계테스트 {  
+    public static void main(String[] args) {  
+        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("jpabook");  
+        EntityManager entityManager = entityManagerFactory.createEntityManager();  
+        EntityTransaction tx = entityManager.getTransaction();  
+  
+        try {  
+            tx.begin();  
+            logic(entityManager);  
+            tx.commit();  
+        }catch (Exception e){  
+            e.printStackTrace();  
+        }finally {  
+            entityManager.close();  
+        }  
+        entityManagerFactory.close();  
+    }  
+  
+    static void logic(EntityManager entityManager){  
+        Parent parent = new Parent();  
+        parent.setId("pp");  
+        parent.setName("ppppppppp");  
+        entityManager.persist(parent);  
+  
+        Child child = new Child();  
+        child.setId("cc");  
+        child.setParent(parent);  
+        child.setName("ccccccc");  
+        entityManager.persist(child);  
+  
+        GrandChild grandChild = new GrandChild();  
+        grandChild.setId("gg");  
+        grandChild.setChild(child);  
+        grandChild.setName("gg");  
+        entityManager.persist(grandChild);  
+        //==> 이전단계에서의 PK를 FK로써만 참고할 뿐~~  
+  
+  GrandChild findGrand = entityManager.find(GrandChild.class,"gg");  
+        System.out.println("findGrand: "+findGrand);  
+        //그래프 탐색  
+  System.out.println("find child by grand : "+findGrand.getChild());  
+        System.out.println("find parent by grand: "+findGrand.getChild().getParent());  
+    }  
+}
+```
+```
+22:39:56.100 [main] DEBUG org.hibernate.event.internal.AbstractSaveEventListener - Generated identifier: gg, using strategy: org.hibernate.id.Assigned
+findGrand: GrandChild(id=gg, name=gg, child=Child(id=cc, name=ccccccc, parent=Parent(id=pp, name=ppppppppp)))
+find child by grand : Child(id=cc, name=ccccccc, parent=Parent(id=pp, name=ppppppppp))
+find parent by grand: Parent(id=pp, name=ppppppppp)
+```
+#### 3-1-2. 일대일 식별관계
+
+![일대일 식별관계](https://github.com/hy6219/JPA_QueryDSL/blob/main/inheritance_mapping/%EB%B3%B5%ED%95%A9%ED%82%A4%EC%99%80_%EC%8B%9D%EB%B3%84%EA%B4%80%EA%B3%84_%EB%A7%A4%ED%95%91/%EC%8B%9D%EB%B3%84%EA%B4%80%EA%B3%84_%EC%9D%BC%EB%8C%80%EC%9D%BC.jpg?raw=true)
+
+위와 같이 PK+FK를 수행하는 BoardDetail 테이블이 있다고 생각해보자 
+그런데, 위의 경우에서는 복합키가 아니므로 따로 복합키 클래스를 준비하지 않아도 된다!
+✅ 단, FK를 관리하는 측에서 `@MapsId` 로 연결해주어야 한다!
+
+(1) Board 엔티티
+
+```java
+package com.example.ch07jpastart10.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+  
+@Entity  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+@TableGenerator(  
+        name = "board_table_generator",  
+        pkColumnValue = "borad_seq",  
+        allocationSize = 1  
+)  
+public class Board {  
+    @Id  
+ @GeneratedValue(strategy = GenerationType.TABLE, generator = "board_table_generator")  
+    private Long id;  
+  
+    private String title;  
+  
+    @OneToOne(mappedBy = "board")  
+    @ToString.Exclude  
+  private BoardDetail boardDetail;  
+}
+```
+
+(2) BoardDetail 엔티티
+
+```java
+package com.example.ch07jpastart10.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+  
+@Entity  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+@TableGenerator(  
+        name = "board_detail_generator",  
+        pkColumnValue = "borad_detail_seq",  
+        allocationSize = 1  
+)  
+public class BoardDetail {  
+    @Id  
+ @GeneratedValue(strategy = GenerationType.TABLE,generator = "board_detail_generator")  
+    private Long id;  
+  
+    private String content;  
+  
+    @MapsId//Board엔티티 내부에서 BoardDetail.boardId 매핑->Board측과 연결될것  
+  @OneToOne  
+ @JoinColumn(name = "BOARD_ID")  
+    @ToString.Exclude  
+  private Board board;  
+}
+```
+
+```java
+package com.example.ch07jpastart10.test;  
+  
+import com.example.ch07jpastart10.domain.entity.Board;  
+import com.example.ch07jpastart10.domain.entity.BoardDetail;  
+  
+import javax.persistence.EntityManager;  
+import javax.persistence.EntityManagerFactory;  
+import javax.persistence.EntityTransaction;  
+import javax.persistence.Persistence;  
+  
+public class 일대일식별관계테스트 {  
+    public static void main(String[] args) {  
+        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("jpabook");  
+        EntityManager entityManager = entityManagerFactory.createEntityManager();  
+        EntityTransaction tx = entityManager.getTransaction();  
+  
+        try {  
+            tx.begin();  
+            logic(entityManager);  
+            tx.commit();  
+        }catch (Exception e){  
+            e.printStackTrace();  
+        }finally {  
+            entityManager.close();  
+        }  
+        entityManagerFactory.close();  
+    }  
+  
+    static void logic(EntityManager entityManager){  
+        Board board = new Board();  
+        board.setTitle("board1");  
+        entityManager.persist(board);  
+  
+        BoardDetail detail = new BoardDetail();  
+        detail.setBoard(board);  
+        detail.setContent("detail");  
+        board.setBoardDetail(detail);  
+        entityManager.persist(detail);  
+  
+        BoardDetail find = entityManager.find(BoardDetail.class,1L);  
+        System.out.println("board detail: "+find);  
+        System.out.println("board by board detail : "+find.getBoard());  
+    }  
+}
+```
+```
+23:40:00.242 [main] DEBUG org.hibernate.event.internal.AbstractSaveEventListener - Generated identifier: 1, using strategy: org.hibernate.id.ForeignGenerator
+board detail: BoardDetail(id=1, content=detail)
+board by board detail : Board(id=1, title=board1)
+```
+#### 3-1-3. `비식별관계가 선호되는 이유`
+
+1️⃣ DB 관점
+
+- 식별관계는 부모 테이블의 기본키를 자식 테이블로 전파하면서 자식 테이블에서의 기본키 컬럼이 점점 늘어지게 됨
+- 식별관계는 2개 이상의 컬럼을 합해서 복합 기본키를 만들어야 하는 경우가 많음
+- 식별관계 기본키는 비즈니스 의미가 있는 자연키 컬럼을 주로 사용하고, 비식별 관계 기본키는 대리키를 사용하는데 이 차이로 인해서 비즈니스 변경에 의한 적용이 유연하지 못함
+- 테이블 구조가 덜 유연함
+
+2️⃣ 객체 관계 매핑
+
+- 식별관계에서는 복합키를 만들게 되면서 매핑해야 하는 컬럼 수가 많아지게 되면서 많은 노력이 필요하게 됨
+- 비식별 관계의 대리키는 jpa에서 지원되는 기본키 생성 전략을 편하게 적용 가능
+
+✅ 식별 관계가 간혹 선택되는 이유
+
+- 하위 테이블에 상위 테이블 정보가 모두 존재하고 있어서, 하위 테이블 만으로도 조회가 가능
+
+👍👍 될 수 있으면 비식별 관계+Long 타입 대리키를 사용하자! (비즈니스 변경에도 유연하다)
+👍👍 선택적 비식별보다 `필수적 비식별` 관계를 선택하자! 
+
+- 선택적 비식별 관계: NULL 허용으로 인해서 외부 조인을 사용해야 함
+- 필수적 비식별 관계 : NOT NULL이 전제되어 있어서 내부 조인만 사용해도 됨
+
+😀 왜 Long 타입인가? - 데이터가 많을 경우를 고려(Integer는 약 20억)
+
 
 ### 3-2. 복합 키 : 비식별 관계 매핑
 
@@ -2519,6 +2835,839 @@ public class GrandChild {
 
 간단하게 세 엔티티를 저장하고 조회해보자
 
+- 인텔리제이를 옮겨쓰면서 발생했던 "java: error: release version 16 not supported"
+➡ https://okky.kr/article/960292 를 참고!
 
+- 인텔리제이에서 maven 뷰를 보고 싶을 때: https://roeldowney.tistory.com/460#:~:text=%2D%20pom.xml%20%EC%97%90%EC%84%9C%20%EC%9A%B0%ED%81%B4%EB%A6%AD%20%ED%95%9C%EB%8B%A4,%EB%81%9D!!
 
+- "Plugin 'org.springframework.boot:spring-boot-maven-plugin:' not found" 
+➡ pom.xml서 스프링 버전과 맞추어서 버전을 명시해주기
+https://velog.io/@ashappyasikonw/spring-boot-maven-plugin-not-found-%ED%95%B4%EA%B2%B0-%EB%B0%A9%EB%B2%95
 
+```java
+package com.example.ch07jpastart8_re.test;  
+  
+import com.example.ch07jpastart8_re.domain.entity.*;  
+  
+import javax.persistence.EntityManager;  
+import javax.persistence.EntityManagerFactory;  
+import javax.persistence.EntityTransaction;  
+import javax.persistence.Persistence;  
+  
+public class IdenticalRelEmbeddedTest {  
+    public static void main(String[] args) {  
+        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("jpabook");  
+        EntityManager entityManager = entityManagerFactory.createEntityManager();  
+        EntityTransaction tx = entityManager.getTransaction();  
+  
+        try {  
+            tx.begin();  
+            logic(entityManager);  
+            tx.commit();  
+        }catch (Exception e){  
+            e.printStackTrace();  
+        }finally {  
+            entityManager.close();  
+        }  
+  
+        entityManagerFactory.close();  
+    }  
+  
+    static void logic(EntityManager entityManager){  
+        Parent parent = new Parent();  
+        parent.setId("p2");  
+        parent.setName("p2");  
+        entityManager.persist(parent);  
+  
+        ChildId childId = new ChildId();  
+        childId.setParentId(parent.getId());  
+        childId.setId("child1");  
+  
+        Child child = new Child();  
+        child.setId(childId);  
+        child.setParent(parent);  
+        child.setName("childchild");  
+        entityManager.persist(child);  
+  
+        GrandChildId grandChildId = new GrandChildId();  
+        grandChildId.setId("grandChildId");  
+        grandChildId.setChildId(childId);  
+  
+        GrandChild grandChild = new GrandChild();  
+        grandChild.setId(grandChildId);  
+        grandChild.setChild(child);  
+        grandChild.setName("grandgrandgrand");  
+        entityManager.persist(grandChild);  
+  
+        //조회  
+  Parent findParent = entityManager.find(Parent.class,"p2");  
+        Child findChild = entityManager.find(Child.class,childId);  
+        GrandChild findGrandChild = entityManager.find(GrandChild.class,grandChildId);  
+  
+        System.out.println("find parent: "+findParent);  
+        System.out.println("find child by childId: "+findChild+",child id: "+childId);  
+        System.out.println("find grandchild by grandchildid: "+findGrandChild+", grand child id: "+grandChildId);  
+    }  
+}
+```
+
+```
+Hibernate: 
+    
+    create table Child (
+       CHILD_ID varchar(255) not null,
+        PARENT_ID varchar(255) not null,
+        name varchar(255),
+        primary key (CHILD_ID, PARENT_ID)
+    )
+Hibernate: 
+    
+    create table GrandChild (
+       GRANDCHILD_ID varchar(255) not null,
+        name varchar(255),
+        PARENT_ID varchar(255) not null,
+        CHILD_ID varchar(255) not null,
+        primary key (PARENT_ID, CHILD_ID, GRANDCHILD_ID)
+    )
+Hibernate: 
+    
+    create table Parent (
+       PARENT_ID varchar(255) not null,
+        name varchar(255),
+        primary key (PARENT_ID)
+    )
+Hibernate: 
+    
+    alter table Child 
+       add constraint FKqtrfkxtu92rllepi09f1mwvls 
+       foreign key (PARENT_ID) 
+       references Parent
+Hibernate: 
+    
+    alter table GrandChild 
+       add constraint FK8inu9bnj1yk1nrcistr894v1f 
+       foreign key (PARENT_ID, CHILD_ID) 
+       references Child
+21:44:28.623 [main] DEBUG org.hibernate.event.internal.AbstractSaveEventListener - Generated identifier: component[childId,id]{id=grandChildId, childId=component[id,parentId]{id=child1, parentId=p2}}, using strategy: org.hibernate.id.CompositeNestedGeneratedValueGenerator
+find parent: Parent(id=p2, name=p2)
+find child by childId: Child(id=ChildId(parentId=p2, id=child1), parent=Parent(id=p2, name=p2), name=childchild),child id: ChildId(parentId=p2, id=child1)
+find grandchild by grandchildid: GrandChild(id=GrandChildId(childId=ChildId(parentId=p2, id=child1), id=grandChildId), child=Child(id=ChildId(parentId=p2, id=child1), parent=Parent(id=p2, name=p2), name=childchild), name=grandgrandgrand), grand child id: GrandChildId(childId=ChildId(parentId=p2, id=child1), id=grandChildId)
+```
+
+그러면 `@IdClass` 식별관계시 복합키 결과와 동일한 결과를 확인해볼 수 있다
+
+## 4. 조인 테이블
+
+✅ `DB 테이블의 연관관계를 설계하는 방법`
+
+1️⃣ `조인 컬럼(외래키)` 사용
+
+![DB 테이블 연관관계 설계- 조인컬럼 사용](https://github.com/hy6219/JPA_QueryDSL/blob/main/inheritance_mapping/%EB%B3%B5%ED%95%A9%ED%82%A4%EC%99%80_%EC%8B%9D%EB%B3%84%EA%B4%80%EA%B3%84_%EB%A7%A4%ED%95%91/%EC%A1%B0%EC%9D%B8%ED%85%8C%EC%9D%B4%EB%B8%94/%EC%A1%B0%EC%9D%B8%EC%BB%AC%EB%9F%BC.jpg?raw=true)
+
+- 테이블 간 관계를 주로 `조인 컬럼`이라고 부르는 `외래 키 컬럼을 사용`해서 관리
+- 선택적 비식별 관계: NULL 허용으로 인해서 외부 조인을 사용해야 함(위의 경우가 해당) ➡ 
+
+✅ 내부조인으로 진행하게 될 경우에는 관계가 맺어져 있지 않은 데이터는 조회되지 않을 수 있음
+
+✅ 두 엔티티간 관계가 맺어지는 경우가 적을 경우에 외래 키 값 대부분이 null 로 저장되는 단점 존재
+
+- 필수적 비식별 관계 : NOT NULL이 전제되어 있어서 내부 조인만 사용해도 됨
+- `@JoinColumn`
+
+2️⃣ `조인 테이블(테이블)` 사용
+
+![DB 테이블 연관관계 설계- 조인테이블 사용](https://github.com/hy6219/JPA_QueryDSL/blob/main/inheritance_mapping/%EB%B3%B5%ED%95%A9%ED%82%A4%EC%99%80_%EC%8B%9D%EB%B3%84%EA%B4%80%EA%B3%84_%EB%A7%A4%ED%95%91/%EC%A1%B0%EC%9D%B8%ED%85%8C%EC%9D%B4%EB%B8%94/%EC%A1%B0%EC%9D%B8%ED%85%8C%EC%9D%B4%EB%B8%94.jpg?raw=true)
+
+- 두 엔티티 사이에 중간 테이블을 두고, 두 엔티티에 대한 id값을 추가하여 진행됨
+(이렇게 될 때, FK 관리를 중간 테이블에서 진행)
+- 주로 다대다 관계를 일대다/다대일 관계로 풀어내고자 할 때 사용
+BUT 일대일, 일대다, 다대일에서도 사용
+- `@JoinTable`
+
+✅ 테이블을 추가해야 한다는 단점
+
+✅ 두 엔티티 간 조인이 필요할 경우, 조인 테이블도 조인해주어야 함
+
+- 아래와 같은 필드로 관계를 맺어주기
+```java
+@연관관계매핑
+@JoinTable(  
+        //조인테이블 이름  
+  name = "parent_child",  
+        //현재 엔티티를 참조하는 외래키  
+  joinColumns = {  
+                @JoinColumn(name = "PARENT_ID",referencedColumnName = "PARENT_ID")  
+        },  
+        //반대방향 엔티티를 참조하는 외래키  
+  inverseJoinColumns = {  
+                @JoinColumn(name = "CHILD_ID")  
+        }  
+)  
+private 반대방향_엔티티 인스턴스명;
+```
+
+### 4-1. 일대일 조인 테이블
+
+![일대일 조인 테이블](https://github.com/hy6219/JPA_QueryDSL/blob/main/inheritance_mapping/%EB%B3%B5%ED%95%A9%ED%82%A4%EC%99%80_%EC%8B%9D%EB%B3%84%EA%B4%80%EA%B3%84_%EB%A7%A4%ED%95%91/%EC%A1%B0%EC%9D%B8%ED%85%8C%EC%9D%B4%EB%B8%94/%EC%9D%BC%EB%8C%80%EC%9D%BC%EC%A1%B0%EC%9D%B8%ED%85%8C%EC%9D%B4%EB%B8%94.jpg?raw=true)
+
+1️⃣ 부모 엔티티
+
+```java
+@OneToOne  
+@JoinTable(  
+        //조인테이블 이름  
+  name = "parent_child",  
+        //현재 엔티티를 참조하는 외래키  
+  joinColumns = {  
+                @JoinColumn(name = "PARENT_ID",referencedColumnName = "PARENT_ID")  
+        },  
+        //반대방향 엔티티를 참조하는 외래키  
+  inverseJoinColumns = {  
+                @JoinColumn(name = "CHILD_ID")  
+        }  
+)  
+private 반대방향_엔티티 인스턴스명;
+```
+- 위와 같이 조인테이블, 현재엔티티, 반대방향 엔티티를 이어주는 조인테이블을 `@JoinTable`에 명시
+
+- `@OneToOne` 관계 매핑
+
+```java
+package com.example.ch07jpastart11.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+  
+@Entity  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+@TableGenerator(  
+        name = "parent_table_generator",  
+        pkColumnValue = "parent_seq",  
+        allocationSize = 1  
+)  
+public class Parent {  
+    @Id  
+ @GeneratedValue(strategy = GenerationType.TABLE, generator = "parent_table_generator")  
+    @Column(name ="PARENT_ID")  
+    private Long id;  
+  
+    private String name;  
+  
+    @OneToOne  
+ @JoinTable(  
+            //조인테이블 이름  
+  name = "parent_child",  
+            //현재 엔티티를 참조하는 외래키  
+  joinColumns = {  
+                    @JoinColumn(name = "PARENT_ID",referencedColumnName = "PARENT_ID")  
+            },  
+            //반대방향 엔티티를 참조하는 외래키  
+  inverseJoinColumns = {  
+                    @JoinColumn(name = "CHILD_ID")  
+            }  
+    )  
+    private Child child;  
+}
+```
+
+2️⃣ 자식 엔티티
+
+- 양방향으로 변경하고 싶다면 자식 엔티티에서도 연관관계를 맺어주면 될 것!
+```java
+@OneToOne(mappedBy = "child")
+private Parent parent;
+```
+
+```java
+package com.example.ch07jpastart11.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+  
+@Entity  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+@TableGenerator(  
+        name = "child_table_generator",  
+        pkColumnValue = "child_seq",  
+        allocationSize = 1  
+)  
+public class Child {  
+    @Id  
+ @GeneratedValue(strategy = GenerationType.TABLE, generator = "child_table_generator")  
+    @Column(name = "CHILD_ID")  
+    private Long id;  
+  
+    private String name;  
+}
+```
+
+간단히 두 엔티티를 저장하고, 부모 엔티티로 자식 엔티티에 대해서 그래프 탐색을 진행해보자
+
+```java
+package com.example.ch07jpastart11.test;  
+  
+import com.example.ch07jpastart11.domain.entity.Child;  
+import com.example.ch07jpastart11.domain.entity.Parent;  
+  
+import javax.persistence.EntityManager;  
+import javax.persistence.EntityManagerFactory;  
+import javax.persistence.EntityTransaction;  
+import javax.persistence.Persistence;  
+  
+public class 일대일조인테이블테스트 {  
+    public static void main(String[] args) {  
+        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("jpabook");  
+        EntityManager entityManager = entityManagerFactory.createEntityManager();  
+        EntityTransaction tx = entityManager.getTransaction();  
+  
+        try {  
+            tx.begin();  
+            logic(entityManager);  
+            tx.commit();  
+        }catch (Exception e){  
+            e.printStackTrace();  
+        }finally {  
+            entityManager.close();  
+        }  
+        entityManagerFactory.close();  
+    }  
+  
+    static void logic(EntityManager entityManager){  
+        Parent parent = new Parent();  
+        parent.setName("parent");  
+        entityManager.persist(parent);  
+  
+        Child child = new Child();  
+        child.setName("child");  
+        entityManager.persist(child);  
+  
+        parent.setChild(child);  
+  
+        Parent find = entityManager.find(Parent.class,1L);  
+        System.out.println("parent: "+find);  
+        System.out.println("child by parent: "+find.getChild());  
+    }  
+}
+```
+그러면 아래 DDL 및 DML에서 확인해볼수 있듯, 중간 테이블이 생겨나고, 양측 엔티티에 대한 기본키가 관리되고 삽입되는 것을 확인해볼 수 있다
+```
+(중략)
+    create table parent_child (
+       CHILD_ID bigint,
+        PARENT_ID bigint not null,
+        primary key (PARENT_ID)
+    )
+Hibernate: 
+    
+    alter table parent_child 
+       add constraint FKg87mg7l2dwulmph9iuahvdrer 
+       foreign key (CHILD_ID) 
+       references Child
+Hibernate: 
+    
+    alter table parent_child 
+       add constraint FKrjsnfriyii0sjqvj12wnynepw 
+       foreign key (PARENT_ID) 
+       references Parent
+00:46:12.927 [main] DEBUG org.hibernate.event.internal.AbstractSaveEventListener - Generated identifier: 1, using strategy: org.hibernate.id.enhanced.TableGenerator
+parent: Parent(id=1, name=parent, child=Child(id=1, name=child))
+child by parent: Child(id=1, name=child)
+Hibernate: 
+    insert 
+    into
+        Parent
+        (name, PARENT_ID) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        Child
+        (name, CHILD_ID) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        parent_child
+        (CHILD_ID, PARENT_ID) 
+    values
+        (?, ?)
+```
+
+### 4-2. 일대다 조인 테이블
+
+![일대다 조인 테이블](https://github.com/hy6219/JPA_QueryDSL/blob/main/inheritance_mapping/%EB%B3%B5%ED%95%A9%ED%82%A4%EC%99%80_%EC%8B%9D%EB%B3%84%EA%B4%80%EA%B3%84_%EB%A7%A4%ED%95%91/%EC%A1%B0%EC%9D%B8%ED%85%8C%EC%9D%B4%EB%B8%94/%EC%9D%BC%EB%8C%80%EB%8B%A4%EC%A1%B0%EC%9D%B8%ED%85%8C%EC%9D%B4%EB%B8%94.jpg?raw=true)
+
+- 위와 같이 `일대다 단방향`의 경우, 일대다 조인테이블에서는 `부모` ➡ `조인테이블`  = 1:N, `조인테이블`:`자식` = 1:1로 연결되는 모습을 확인할 수 있음
+
+1️⃣ 부모 엔티티
+
+- `@JoinTable` 과 연관관계 매핑
+```java
+package com.example.ch07jpastart12.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+import java.util.ArrayList;  
+import java.util.List;  
+  
+@Entity  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+@TableGenerator(  
+        name = "parent_table_generator",  
+        pkColumnValue = "parent_seq",  
+        allocationSize = 1  
+)  
+public class Parent {  
+    @Id  
+ @GeneratedValue(strategy = GenerationType.TABLE, generator = "parent_table_generator")  
+    @Column(name = "PARENT_ID")  
+    private Long id;  
+    private String name;  
+  
+    @OneToMany  
+ @JoinTable(  
+            name = "parent_child",  
+            joinColumns = {  
+                    //조인테이블에서 불릴 이름 name, 현재 엔티티에서 불리는 이름 referencedColumnName  @JoinColumn(name = "PARENT_ID",referencedColumnName = "PARENT_ID")  
+            },  
+            inverseJoinColumns = {  
+                    @JoinColumn(name = "CHILD_ID",referencedColumnName = "CHILD_ID")  
+            }  
+    )  
+    private List<Child> child = new ArrayList<>();  
+}
+```
+
+2️⃣ 자식 엔티티
+
+```java
+package com.example.ch07jpastart12.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+  
+@Entity  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+@TableGenerator(  
+        name = "child_table_generator",  
+        pkColumnValue = "parent_seq",  
+        allocationSize = 1  
+)  
+public class Child {  
+    @Id  
+ @GeneratedValue(strategy = GenerationType.TABLE, generator = "child_table_generator")  
+    @Column(name = "CHILD_ID")  
+    private Long id;  
+    private String name;  
+}
+```
+
+이번에도 두 엔티티를 저장하고 확인해보자
+
+```java
+package com.example.ch07jpastart12.test;  
+  
+import com.example.ch07jpastart12.domain.entity.Child;  
+import com.example.ch07jpastart12.domain.entity.Parent;  
+  
+import javax.persistence.EntityManager;  
+import javax.persistence.EntityManagerFactory;  
+import javax.persistence.EntityTransaction;  
+import javax.persistence.Persistence;  
+import java.util.List;  
+  
+public class 일대다조인테이블테스트 {  
+    public static void main(String[] args) {  
+        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("jpabook");  
+        EntityManager entityManager = entityManagerFactory.createEntityManager();  
+        EntityTransaction tx = entityManager.getTransaction();  
+  
+        try {  
+            tx.begin();  
+            logic(entityManager);  
+            tx.commit();  
+        }catch (Exception e){  
+            e.printStackTrace();  
+        }finally {  
+            entityManager.close();  
+        }  
+        entityManagerFactory.close();  
+    }  
+  
+    static void logic(EntityManager entityManager){  
+        Parent parent = new Parent();  
+        parent.setName("p1");  
+        entityManager.persist(parent);  
+  
+        Child child = new Child();  
+        child.setName("c1");  
+        entityManager.persist(child);  
+  
+        parent.setChild(List.of(child));  
+  
+        Parent find = entityManager.find(Parent.class,1L);  
+        System.out.println("parent: "+find);  
+        System.out.println("child by parent : "+find.getChild());  
+    }  
+}
+```
+```
+Hibernate: 
+    
+    create table parent_child (
+       PARENT_ID bigint not null,
+        CHILD_ID bigint not null
+    )
+Hibernate: 
+    
+    alter table parent_child 
+       add constraint FKg87mg7l2dwulmph9iuahvdrer 
+       foreign key (CHILD_ID) 
+       references Child
+Hibernate: 
+    
+    alter table parent_child 
+       add constraint FKrjsnfriyii0sjqvj12wnynepw 
+       foreign key (PARENT_ID) 
+       references Parent
+       
+01:30:40.061 [main] DEBUG org.hibernate.event.internal.AbstractSaveEventListener - Generated identifier: 1, using strategy: org.hibernate.id.enhanced.TableGenerator
+parent: Parent(id=1, name=p1, child=[Child(id=1, name=c1)])
+child by parent : [Child(id=1, name=c1)]       
+```
+그러면 이번에도 중간테이블에서 두 엔티티에 대해서 관리하는 모습을 확인해볼 수 있다
+
+### 4-3. 다대일 조인 테이블
+
+![다대일 조인 테이블](https://github.com/hy6219/JPA_QueryDSL/blob/main/inheritance_mapping/%EB%B3%B5%ED%95%A9%ED%82%A4%EC%99%80_%EC%8B%9D%EB%B3%84%EA%B4%80%EA%B3%84_%EB%A7%A4%ED%95%91/%EC%A1%B0%EC%9D%B8%ED%85%8C%EC%9D%B4%EB%B8%94/%EC%9D%BC%EB%8C%80%EB%8B%A4%EC%A1%B0%EC%9D%B8%ED%85%8C%EC%9D%B4%EB%B8%94.jpg?raw=true)
+
+- 일대다에서 방향만 반대이고 , 적용 패턴은 동일!
+
+1️⃣ 부모 엔티티
+
+```java
+package com.example.ch07jpastart13.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+import java.util.ArrayList;  
+import java.util.List;  
+  
+@Entity  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+@TableGenerator(  
+        name = "parent_table_generator",  
+        pkColumnValue = "parent_seq",  
+        allocationSize = 1  
+)  
+public class Parent {  
+    @Id  
+ @GeneratedValue(strategy = GenerationType.TABLE, generator = "parent_table_generator")  
+    @Column(name = "PARENT_ID")  
+    private Long id;  
+    private String name;  
+  
+    @OneToMany(mappedBy = "parent")  
+    @ToString.Exclude  
+  private List<Child> child = new ArrayList<>();  
+}
+```
+
+2️⃣ 자식 엔티티
+
+```java
+package com.example.ch07jpastart13.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+  
+@Entity  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+@TableGenerator(  
+        name = "child_table_generator",  
+        pkColumnValue = "parent_seq",  
+        allocationSize = 1  
+)  
+public class Child {  
+    @Id  
+ @GeneratedValue(strategy = GenerationType.TABLE, generator = "child_table_generator")  
+    @Column(name = "CHILD_ID")  
+    private Long id;  
+    private String name;  
+  
+    @ManyToOne(optional = false)//필수적 비식별 관계  
+  @JoinTable(  
+            name = "parent_child",  
+            joinColumns = {  
+                    //조인테이블에서 불릴 이름 name, 현재 엔티티에서 불리는 이름 referencedColumnName  @JoinColumn(name = "CHILD_ID",referencedColumnName = "CHILD_ID")  
+            },  
+            inverseJoinColumns = {  
+                    @JoinColumn(name = "PARENT_ID",referencedColumnName = "PARENT_ID")  
+            }  
+    )  
+    @ToString.Exclude  
+  private Parent parent;  
+}
+```
+
+### 4-4. 다대다 조인 테이블
+
+![다대다 조인 테이블](https://github.com/hy6219/JPA_QueryDSL/blob/main/inheritance_mapping/%EB%B3%B5%ED%95%A9%ED%82%A4%EC%99%80_%EC%8B%9D%EB%B3%84%EA%B4%80%EA%B3%84_%EB%A7%A4%ED%95%91/%EC%A1%B0%EC%9D%B8%ED%85%8C%EC%9D%B4%EB%B8%94/%EB%8B%A4%EB%8C%80%EB%8B%A4%EC%A1%B0%EC%9D%B8%ED%85%8C%EC%9D%B4%EB%B8%94.jpg?raw=true)
+
+- 하나의 복합 유니크 제약조건을 걸어주어야 함
+
+1️⃣ 부모 엔티티
+
+```java
+package com.example.ch07jpastart14.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+import java.util.ArrayList;  
+import java.util.List;  
+  
+@Entity  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+@TableGenerator(  
+        name = "parent_table_generator",  
+        pkColumnValue = "parent_seq",  
+        allocationSize = 1  
+)  
+public class Parent {  
+    @Id  
+ @GeneratedValue(strategy = GenerationType.TABLE, generator = "parent_table_generator")  
+    @Column(name = "PARENT_ID")  
+    private Long id;  
+    private String name;  
+  
+    @ManyToMany  
+ @JoinTable(  
+            name = "parent_child",  
+            joinColumns = {  
+                    //조인테이블에서 불릴 이름 name, 현재 엔티티에서 불리는 이름 referencedColumnName  @JoinColumn(name = "PARENT_ID",referencedColumnName = "PARENT_ID")  
+            },  
+            inverseJoinColumns = {  
+                    @JoinColumn(name = "CHILD_ID",referencedColumnName = "CHILD_ID")  
+            }  
+    )  
+    private List<Child> child = new ArrayList<>();  
+}
+```
+
+2️⃣ 자식 엔티티
+
+```java
+package com.example.ch07jpastart14.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+import lombok.ToString;  
+  
+import javax.persistence.*;  
+  
+@Entity  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@ToString  
+@TableGenerator(  
+        name = "child_table_generator",  
+        pkColumnValue = "parent_seq",  
+        allocationSize = 1  
+)  
+public class Child {  
+    @Id  
+ @GeneratedValue(strategy = GenerationType.TABLE, generator = "child_table_generator")  
+    @Column(name = "CHILD_ID")  
+    private Long id;  
+    private String name;  
+}
+```
+
+### 4-5. 엔티티 하나에 여러 테이블 매핑
+
+![엔티티 하나에 여러 테이블 매핑](https://github.com/hy6219/JPA_QueryDSL/blob/main/inheritance_mapping/%EB%B3%B5%ED%95%A9%ED%82%A4%EC%99%80_%EC%8B%9D%EB%B3%84%EA%B4%80%EA%B3%84_%EB%A7%A4%ED%95%91/%EC%A1%B0%EC%9D%B8%ED%85%8C%EC%9D%B4%EB%B8%94/%EB%8B%A4%EB%8C%80%EB%8B%A4%EC%A1%B0%EC%9D%B8%ED%85%8C%EC%9D%B4%EB%B8%94.jpg?raw=true)
+
+이번에는 하나의 엔티티에 여러 테이블을 매핑해보자
+
+- `@SecondaryTable.name` : 매핑할 다른 테이블의 이름
+- `@SecondaryTable.pkJoinColumns` : 매핑할 다른 테이블의 기본키 컬럼 속성
+
+-  `@Column(table = ~)`로 다른 테이블에 특정 필드를 매핑시켜줄 수 있음
+- 더 많은 테이블들을 하나의 엔티티에서 매핑시키려면
+```java
+@SeconaryTables({
+	@SecondaryTable(name ="BOARD_DETAIL"),
+	@SecondaryTable(name= "BOARD_FILE")
+})
+```
+처럼 진행 BUT!! `테이블당 엔티티를 만들고, 관계매핑`하는 것이 보다 권장됨!!!
+(항상 2개 이상 테이블을 조회해야 하기 때문에 최적화하기 어려움)
+
+```java
+package com.example.ch07jpastart15.domain.entity;  
+  
+import lombok.Getter;  
+import lombok.NoArgsConstructor;  
+import lombok.Setter;  
+  
+import javax.persistence.*;  
+  
+@Entity  
+@Table(name = "BOARD")  
+@NoArgsConstructor  
+@Getter  
+@Setter  
+@TableGenerator(  
+        name = "board_table_generator",  
+        pkColumnValue = "board_seq",  
+        allocationSize = 1  
+)  
+//다른 테이블 연결  
+@SecondaryTables({  
+        @SecondaryTable(name = "BOARD_DETAIL", pkJoinColumns = @PrimaryKeyJoinColumn(name = "BOARD_DETAIL_ID"))  
+})  
+public class Board {  
+    @Id  
+ @GeneratedValue(strategy = GenerationType.TABLE, generator = "board_table_generator")  
+    @Column(name = "BOARD_ID")  
+    private Long id;  
+  
+    private String title;  
+  
+    //content 필드에 연결  
+  @Column(table = "BOARD_DETAIL")  
+    private String content;  
+}
+```
+DDL, DML을 살펴보자
+```java
+package com.example.ch07jpastart15.test;  
+  
+import com.example.ch07jpastart15.domain.entity.Board;  
+  
+import javax.persistence.EntityManager;  
+import javax.persistence.EntityManagerFactory;  
+import javax.persistence.EntityTransaction;  
+import javax.persistence.Persistence;  
+  
+public class 엔티티하나에여러테이블테스트 {  
+    public static void main(String[] args) {  
+        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("jpabook");  
+        EntityManager entityManager = entityManagerFactory.createEntityManager();  
+        EntityTransaction tx = entityManager.getTransaction();  
+  
+        try {  
+            tx.begin();  
+            logic(entityManager);  
+            tx.commit();  
+        }catch (Exception e){  
+            e.printStackTrace();  
+        }finally {  
+            entityManager.close();  
+        }  
+        entityManagerFactory.close();  
+    }  
+  
+    static void logic(EntityManager entityManager){  
+        Board board = new Board();  
+        board.setContent("content1");  
+        board.setTitle("title1");  
+        entityManager.persist(board);  
+  
+        Board find = entityManager.find(Board.class,1L);  
+        System.out.println("board: "+find);  
+    }  
+}
+```
+
+```
+Hibernate: 
+    
+    create table BOARD (
+       BOARD_ID bigint not null,
+        title varchar(255),
+        primary key (BOARD_ID)
+    )
+Hibernate: 
+    
+    create table BOARD_DETAIL (
+       content varchar(255),
+        BOARD_DETAIL_ID bigint not null,
+        primary key (BOARD_DETAIL_ID)
+    )
+Hibernate: 
+    
+    alter table BOARD_DETAIL 
+       add constraint FKp6yjsbv5iijxryem6cpfl5ulh 
+       foreign key (BOARD_DETAIL_ID) 
+       references BOARD
+Hibernate: 
+    insert 
+    into
+        BOARD
+        (title, BOARD_ID) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        BOARD_DETAIL
+        (content, BOARD_DETAIL_ID) 
+    values
+        (?, ?)
+(중략)
+```
+그러면 Board는 [board_id,title], Board_detail은 [BOARD_DETAIL_ID(PK+FK==>식별관계, content] 로 구성되는 것을 확인해볼 수 있다
