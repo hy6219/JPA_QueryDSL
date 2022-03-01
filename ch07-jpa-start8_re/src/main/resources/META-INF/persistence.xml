@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence" version="2.1">
     <persistence-unit name="jpabook">
+        <class>com.example.ch07jpastart8_re.domain.entity.Child</class>
+        <class>com.example.ch07jpastart8_re.domain.entity.ChildId</class>
+        <class>com.example.ch07jpastart8_re.domain.entity.GrandChild</class>
+        <class>com.example.ch07jpastart8_re.domain.entity.GrandChildId</class>
+        <class>com.example.ch07jpastart8_re.domain.entity.Parent</class>
         <properties>
             <property name="javax.persistence.jdbc.url" value="jdbc:h2:tcp://localhost/~/test"/>
             <property name="javax.persistence.jdbc.driver" value="org.h2.Driver"/>

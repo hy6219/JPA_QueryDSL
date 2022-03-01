@@ -1,4 +1,4 @@
-package com.example.ch07jpastart8.domain.entity;
+package com.example.ch07jpastart8_re.domain.entity;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

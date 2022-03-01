@@ -1,6 +1,6 @@
-package com.example.ch07jpastart8.test;
+package com.example.ch07jpastart8_re.test;
 
-import com.example.ch07jpastart8.domain.entity.*;
+import com.example.ch07jpastart8_re.domain.entity.*;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -53,6 +53,12 @@ public class IdenticalRelEmbeddedTest {
         entityManager.persist(grandChild);
 
         //조회
+        Parent findParent = entityManager.find(Parent.class,"p2");
+        Child findChild = entityManager.find(Child.class,childId);
+        GrandChild findGrandChild = entityManager.find(GrandChild.class,grandChildId);
 
+        System.out.println("find parent: "+findParent);
+        System.out.println("find child by childId: "+findChild+",child id: "+childId);
+        System.out.println("find grandchild by grandchildid: "+findGrandChild+", grand child id: "+grandChildId);
     }
 }

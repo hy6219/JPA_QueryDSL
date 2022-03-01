@@ -1,9 +1,6 @@
-package com.example.ch07jpastart8.domain.entity;
+package com.example.ch07jpastart8_re.domain.entity;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
@@ -14,6 +11,7 @@ import java.io.Serializable;
 @EqualsAndHashCode
 @Getter
 @Setter
+@ToString
 @Embeddable
 public class GrandChildId implements Serializable {
     //GrandChild.child에서 `@MapsId(childId)`와 매핑
