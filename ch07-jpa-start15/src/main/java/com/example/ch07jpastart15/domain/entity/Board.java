@@ -18,7 +18,7 @@ import javax.persistence.*;
 )
 //다른 테이블 연결
 @SecondaryTables({
-        @SecondaryTable(name = "BOARD_DETAIL")
+        @SecondaryTable(name = "BOARD_DETAIL", pkJoinColumns = @PrimaryKeyJoinColumn(name = "BOARD_DETAIL_ID"))
 })
 public class Board {
     @Id
