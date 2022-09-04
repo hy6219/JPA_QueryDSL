@@ -4,6 +4,7 @@ import com.example.jpql.domain.Member;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -14,6 +15,7 @@ public class CriteriaQueryTest {
     public static void main(String[] args) {
         EntityManagerFactory emf = Persistence.createEntityManagerFactory("jpabook");
         EntityManager em = emf.createEntityManager();
+        EntityTransaction tx = em.getTransaction();
         //1. Criteria 사용 준비
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Member> query = cb.createQuery(Member.class);
