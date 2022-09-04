@@ -7,14 +7,19 @@ buildscript {
 plugins {
     id 'org.springframework.boot' version '2.7.3'
     id 'io.spring.dependency-management' version '1.0.13.RELEASE'
-    id 'java'
     id "com.ewerk.gradle.plugins.querydsl" version "1.0.10"
+    id 'java'
 }
 
 group = 'com.example'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '11'
 
+configurations{
+    compileOnly{
+        extendsFrom annotationProcessor
+    }
+}
 
 repositories {
     mavenCentral()
@@ -43,7 +48,7 @@ tasks.named('test') {
  * QueryDSL 설정 추가
  */
 //1. Q파일 빌드 경로
-def queryDslDir = "$buildDir/generated";
+def queryDslDir = "$buildDir/generated/querydsl";
 
 //2. JPA 사용 여부 및 사용 경로 설정
 querydsl{
@@ -57,9 +62,14 @@ sourceSets{
 }
 
 //4. queryDsl이 compileClassPath를 상속하도록 설정
-configurations{
-    compileOnly{
+configurations {
+    compileOnly {
         extendsFrom annotationProcessor
     }
-    querydsl.extendsFrom compileClassPath
+    querydsl.extendsFrom compileClasspath
+}
+
+//Unable to load class 'com.querydsl.apt.jpa.JPAAnnotationProcessor'.
+compileQuerydsl{
+    options.annotationProcessorPath = configurations.querydsl
 }
